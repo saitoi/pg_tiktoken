@@ -1,7 +1,14 @@
 use pgrx::prelude::*;
-use tiktoken_rs::{r50k_base, o200k_base, cl100k_base, p50k_base, p50k_edit};
+use once_cell::sync::Lazy;
+use tiktoken_rs::{CoreBPE, r50k_base, o200k_base, cl100k_base, p50k_base, p50k_edit};
 
 pgrx::pg_module_magic!();
+
+static O200K:   Lazy<CoreBPE> = Lazy::new(|| o200k_base().expect("o200k_base"));
+static CL100K:  Lazy<CoreBPE> = Lazy::new(|| cl100k_base().expect("cl100k_base"));
+static R50K:    Lazy<CoreBPE> = Lazy::new(|| r50k_base().expect("r50k_base"));
+static P50K:    Lazy<CoreBPE> = Lazy::new(|| p50k_base().expect("p50k_base"));
+static P50K_ED: Lazy<CoreBPE> = Lazy::new(|| p50k_edit().expect("p50k_edit"));
 
 fn resolve_encoder_name(s: &str) -> &str {
     match s {
@@ -19,29 +26,31 @@ fn resolve_encoder_name(s: &str) -> &str {
     }
 }
 
-fn encode_with_model(encoding_selector: &str, text: &str) -> Vec<u32> {
-    let encoder_name = resolve_encoder_name(encoding_selector);
-    let encoder = match encoder_name {
-        "o200k_base" => o200k_base(),
-        "cl100k_base" => cl100k_base(),
-        "r50k_base" | "gpt2" => r50k_base(),
-        "p50k_base" => p50k_base(),
-        "p50k_edit" => p50k_edit(),
-        _ => error!("'{encoding_selector}': unknown model or encoder"),
-    }.unwrap();
-
-    encoder.encode_with_special_tokens(text)
+fn encoder_ref(name: &str) -> &'static CoreBPE {
+    match name {
+        "o200k_base" => &O200K,
+        "cl100k_base" => &CL100K,
+        "r50k_base" | "gpt2" => &R50K,
+        "p50k_base" => &P50K,
+        "p50k_edit" => &P50K_ED,
+        _ => error!("'{name}': unknown model or encoder"),
+    }
 }
 
-#[pg_extern]
-fn tiktoken_encode(encoding_selector: &str, text: &str) -> Vec<i64> {
+fn encode_with_model(encoding_selector: &str, text: &str) -> Vec<u32> {
+    let enc = resolve_encoder_name(encoding_selector);
+    encoder_ref(enc).encode_with_special_tokens(text)
+}
+
+#[pg_extern(parallel_safe, immutable)]
+fn tiktoken_encode(encoding_selector: &str, text: &str) -> Vec<i32> {
     encode_with_model(encoding_selector, text)
         .into_iter()
-        .map(|x| x as i64)
+        .map(|x| x as i32)
         .collect()
 }
 
-#[pg_extern]
+#[pg_extern(parallel_safe, immutable)]
 fn tiktoken_count(encoding_selector: &str, text: &str) -> i64 {
     encode_with_model(encoding_selector, text).len() as i64
 }
