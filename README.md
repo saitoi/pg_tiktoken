@@ -1,5 +1,7 @@
 # pg_tiktoken
 
+### **This is a fork of [pg_tiktoken](https://github.com/kelvich/pg_tiktoken).**
+
 Postgres extension that does input tokenization using OpenAI's tiktoken.
 
 ## Usage
