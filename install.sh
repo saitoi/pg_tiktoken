@@ -1,26 +1,34 @@
-#!/usr/bin/env bash
-# Assuming you have gh-cli configured
-set -euo pipefail
+#!/bin/bash
+set -e
 
-REPO="saitoi/pg_tiktoken"
-PKG="pg_tiktoken"
-PG_MAJOR="${PG_MAJOR:-$(pg_config --version | awk '{print $2}' | cut -d. -f1)}"
-OS_ARCH="${OS_ARCH:-linux-amd64}"
+echo "Installing pg dependencies..."
 
-TAG="$(gh release view --repo "$REPO" --json tagName -q .tagName)"
-ART="${PKG}-${TAG}-pg${PG_MAJOR}-${OS_ARCH}.tar.gz"
+sudo apt-get install build-essential libreadline-dev zlib1g-dev flex bison \
+    libxml2-dev libxslt-dev libssl-dev libxml2-utils xsltproc ccache pkg-config
 
-gh release download "$TAG" --repo "$REPO" --pattern "$ART" --pattern "$ART.sha256" --clobber
-sha256sum -c "$ART.sha256"
+echo "Installing pg_tiktoken..."
 
-tar -xzf "$ART"
-cd "${PKG}-pg${PG_MAJOR}/usr"
-LIBDIR="$(pg_config --libdir)"
-SHAREDIR="$(pg_config --sharedir)"
+# Install rust if not present
+if ! command -v cargo &> /dev/null; then
+    echo "Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source ~/.cargo/env
+fi
 
-sudo mkdir -p "${LIBDIR}" "${SHAREDIR}/extension"
-sudo install -m755 "lib/postgresql/${PG_MAJOR}/lib/${PKG}.so" "${LIBDIR}/${PKG}.so"
-sudo install -m644 "share/postgresql/${PG_MAJOR}/extension/${PKG}.control" "${SHAREDIR}/extension/${PKG}.control"
-sudo install -m644 "share/postgresql/${PG_MAJOR}/extension/${PKG}--"*.sql "${SHAREDIR}/extension/"
+# Install cargo-pgrx if not present
+if ! command -v cargo-pgrx &> /dev/null; then
+    echo "Installing cargo-pgrx..."
+    cargo install --locked cargo-pgrx
+fi
 
-echo "OK. Run: CREATE EXTENSION ${PKG};"
+# Initialize pgrx if needed
+if [ ! -f "$HOME/.pgrx/config.toml" ]; then
+    echo "Initializing pgrx..."
+    cargo pgrx init
+fi
+
+# Build and install
+echo "Building and installing extension..."
+cargo pgrx install
+
+echo "Done! Now run 'CREATE EXTENSION pg_tiktoken;' in your database."

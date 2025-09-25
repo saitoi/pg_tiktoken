@@ -55,6 +55,8 @@ cd pg_tiktoken
 cargo pgrx install
 ```
 
+or simply: `sudo ./install.sh`.
+
 ## Kudos
 
 - https://github.com/zurawiki/tiktoken-rs
