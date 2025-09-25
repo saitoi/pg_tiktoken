@@ -55,7 +55,7 @@ cd pg_tiktoken
 cargo pgrx install
 ```
 
-or simply: `sudo ./install.sh`.
+or simply: `sudo ./deb-install.sh`.
 
 ## Kudos
 
