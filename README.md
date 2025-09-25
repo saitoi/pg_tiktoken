@@ -24,18 +24,24 @@ db=> select tiktoken_encode('cl100k_base', 'A long time ago in a galaxy far, far
 
 ## Supported models
 
-
-| Encoding name           | OpenAI models                                       |
-|-------------------------|-----------------------------------------------------|
-| `cl100k_base`           | ChatGPT models, `text-embedding-ada-002`            |
-| `p50k_base`             | Code models, `text-davinci-002`, `text-davinci-003` |
-| `p50k_edit`             | Use for edit models like `text-davinci-edit-001`, `code-davinci-edit-001` |
-| `r50k_base` (or `gpt2`) | GPT-3 models like `davinci`                         |
+| Encoding name           | Codename                                                                  |
+|-------------------------|---------------------------------------------------------------------------|
+| `o200k_base`            | GPT-4o, GPT-4.1, O-series (`gpt-4o`, `gpt-4o-mini`, `gpt-4.1`, `gpt-4.1-mini`, `o1`, `o1-mini`, `o3`, `o3-mini`) |
+| `cl100k_base`           | GPT-3.5, GPT-4, Embeddings (`text-embedding-3-large`, `text-embedding-3-small`, `text-embedding-ada-002`) |
+| `p50k_base`             | GPT-3 base models (`text-davinci-003`, `text-davinci-002`, `text-curie-001`, `text-babbage-001`, `text-ada-001`) |
+| `p50k_edit`             | Edit models (`text-davinci-edit-001`, `code-davinci-edit-001`)            |
+| `r50k_base` (or `gpt2`) | GPT-3 older models like `davinci`, and GPT-2                              |
 
 `tiktoken_count` and `tiktoken_encode` functions accept both encoding name and OpenAI model name as a first argument.
 
-
 ## Installation
+
+Install the necessary PostgreSQL dependencies for your OS:
+
+```sh
+sudo apt-get install build-essential libreadline-dev zlib1g-dev flex bison \
+    libxml2-dev libxslt-dev libssl-dev libxml2-utils xsltproc ccache pkg-config
+```
 
 Assuming that rust toolchain is already istalled:
 
